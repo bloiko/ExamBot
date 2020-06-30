@@ -1,14 +1,6 @@
-import java.util.List;
+import org.telegram.telegrambots.meta.api.objects.Message;
 
-public class Exam {
-    public List<String> taskList;
-    public List<String> answerList;
-    private void launchTasks(String file){
-        /* TO DO */
-    }
-    public void doExam(String file){
-        for(int i = 0;i<taskList.size();i++){
-
-        }
-    }
+public interface Exam {
+    public void launchTasks(String tasksFile,String aswersFile);
+    public int startExam(Bot bot, Message message);
 }
