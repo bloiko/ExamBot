@@ -24,7 +24,7 @@ public class FirstExam implements Exam {
         readTasks(tasksFile);
         readAnswers(aswersFile);
     }
-    public void readTasks(String tasksFile){
+    public void readTasks(String tasksFile) {
         String task = "";
 
         try {
@@ -33,8 +33,8 @@ public class FirstExam implements Exam {
             while (scan.hasNextLine()) {
                 String line = scan.nextLine();
                 if (line.charAt(3) != '-') {
-                    task += line+"\n";
-                }else {
+                    task += line + "\n";
+                } else {
                     taskList.add(task);
                     task = "";
                 }
