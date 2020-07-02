@@ -1,18 +1,17 @@
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+package com.bohdan;
+
+import com.bohdan.Exam;
 import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Scanner;
 
 public class FirstExam implements Exam {
-    public LinkedList<String> taskList;
-    public LinkedList<String> answerList;
+    public static LinkedList<String> taskList;
+    public static LinkedList<String> answerList;
 
     public FirstExam(String tasksFile, String aswersFile) {
       taskList = new LinkedList<String>();
@@ -59,11 +58,16 @@ public class FirstExam implements Exam {
     }
 
 
-    public int startExam(Bot bot, Message message) {
+    public int startExam(Bot bot, Message message, Update update) {
         int rightAnswersCounter = 0;
         for (int i = 0; i < taskList.size() && i< answerList.size(); i++) {
             bot.sendTask(bot, message, taskList,i);
-            String answer = new String();//answer to do
+            String answer = update.getMessage().getText();
+            while(answer.length()!=1){
+                bot.answerUpdate(update);
+                answer = update.getMessage().getText();
+            }
+           //answer to do
             if (checkAnswer(answer, i)) {
                 rightAnswersCounter++;
             }
