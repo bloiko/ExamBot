@@ -12,23 +12,22 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.LongPollingBot;
 
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Bot extends TelegramLongPollingBot {
     FileWriter usersNameFile;
     LinkedList<User> users;
+    Exam exam ;
 
     public Bot(){
         users = new LinkedList<User>();
+        exam =  new FirstExam("src/main/resources/data/Tasks", "src/main/resources/data/Answers");
     }
     public static void main(String[] args) {
-
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
@@ -39,7 +38,7 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
+         Message message = update.getMessage();
         if (message != null && message.hasText()) {
             if (message.getText().equals("/info")) {
                 sendMsg(message, "Ви знаходитесь в боті,\n" +
@@ -55,93 +54,70 @@ public class Bot extends TelegramLongPollingBot {
                 } else if(!User.getUserFromList(users, message.getChatId().toString()).isExamStart()) {
                     sendMsg(message, "Екзамен розпочався");
                     sendMsg(message, "Правила");//To do
-
-                    Exam exam = new FirstExam("data/Tasks", "data/Answers");
                     User user = User.getUserFromList(users, message.getChatId().toString());
                     user.setExamStart(true);
-                    int rightAnswers = exam.startExam(this, message,update);
-                    sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
+                    sendMsg(message, exam.getTask(user.getTaskNum()));
+                   // user.appendTaskByOne();
+                   // sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
 
-                }//else{sendMsg(message, "Ви вже використали свою спробу");}
+                }else{sendMsg(message, "Ви проходили тест");}
 
             } else if (message.getText().equals("/start")) {
                 sendMsg(message, "Привіт, я ExamBot\n" +
                         "Пропоную тобі заробляти на своїх знаннях");
-            } else if (message.getText().equals("/register")) {
+            } else if (message.getText().equals("/help")) {
+                sendMsg(message, getCommands("src/main/resources/data/commands"));
+            } else if (message.getText().equals("/next")) {
+                User user = User.getUserFromList(users, message.getChatId().toString());
+                user.appendTaskByOne();
+                if(user.getTaskNum()<exam.size()) {
+                    sendMsg(message, exam.getTask(user.getTaskNum()));
+                }else sendMsg(message, "Правильних відповідей - " + exam.checkTest(user.getAnswers())+"/"+exam.size());
+            }else if (message.getText().equals("/register")) {
                 String userName = message.getFrom().getUserName();
                 sendMsg(message, userName);
                 User user = new User();
                 user.setChatId(message.getChatId().toString());
                 users.add(user);
                 try {
-                    FileOutputStream fos = new FileOutputStream("data/Users");
+                    FileOutputStream fos = new FileOutputStream("dataUsers/Users");
                     byte[] buffer = userName.getBytes();
                     fos.write(buffer);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 System.out.println(userName);
+                sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam" );
 
-            }else if(update.hasCallbackQuery()){
-                try {
-                    final Serializable execute =execute(new SendMessage().setText(
-                            update.getCallbackQuery().getData())
-                            .setChatId(update.getCallbackQuery().getMessage().getChatId()));
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
+            }else if(message.getText().length()==1){
+                User user =  User.getUserFromList(users, message.getChatId().toString());
+                if (message.getText().equals("А")){
+                    user.addAnswer("А");
+                    System.out.println("А");
+
+                }else if (message.getText().equals("Б")) {
+                    user.addAnswer("Б");
+                    System.out.println("Б");
+
+                }else if (message.getText().equals("В")) {
+                    user.addAnswer("В");
+                    System.out.println("В");
+
+                } else if (message.getText().equals("Г")) {
+                    user.addAnswer("Г");
+                    System.out.println("Г");
+                }else if (message.getText().equals("Д")) {
+                    user.addAnswer("Д");
+                    System.out.println("Д");
+                }else {
+                    user.addAnswer(message.getText());
                 }
-            }else if (message.getText().equals("А")) {
-               User user =  User.getUserFromList(users, message.getChatId().toString());
-               user.addAnswer("А");
-               System.out.println("А");
 
-            }else if (message.getText().equals("Б")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("Б");
-                System.out.println("Б");
+                sendMsg(message, "Натисніть /next, щоб перейти до наступного завдання");
+            } else {
 
-            }else if (message.getText().equals("В")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("В");
-                System.out.println("В");
+                }
 
-            } else if (message.getText().equals("Г")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("Г");
-                System.out.println("Г");
-
-            }else {
-
-            }
-        }
-
-    }
-    public void answerUpdate(Update update) {
-        Message message = update.getMessage();
-        if (message != null && message.hasText()) {
-             if (message.getText().equals("А")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("А");
-                System.out.println("А");
-
-            }else if (message.getText().equals("Б")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("Б");
-                System.out.println("Б");
-
-            }else if (message.getText().equals("В")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("В");
-                System.out.println("В");
-
-            } else if (message.getText().equals("Г")) {
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                user.addAnswer("Г");
-                System.out.println("Г");
-
-            }else {
-
-            }
         }
 
     }
@@ -151,6 +127,19 @@ public class Bot extends TelegramLongPollingBot {
 
     public String getBotToken() {
         return "1392710998:AAGZJY87XbV8Sl5D7e8AkyTQrvBMfaL11_8";
+    }
+    public String getCommands(String file){
+        String commands = "";
+        try {
+            FileReader fileReader = new FileReader(file);
+            Scanner scan = new Scanner(fileReader);
+            while (scan.hasNextLine()) {
+                String line = scan.nextLine();
+                commands+=line+"\n";
+            }
+        } catch (FileNotFoundException e) {
+        }
+        return commands;
     }
     public void sendTask(SendMessage message) {
         try {

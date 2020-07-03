@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 public class FirstExam implements Exam {
@@ -23,7 +24,7 @@ public class FirstExam implements Exam {
         readTasks(tasksFile);
         readAnswers(aswersFile);
     }
-    public void readTasks(String tasksFile) {
+    public static void readTasks(String tasksFile) {
         String task = "";
 
         try {
@@ -41,7 +42,7 @@ public class FirstExam implements Exam {
         } catch (FileNotFoundException e) {
         }
     }
-    public void readAnswers(String aswersFile){
+    public static void readAnswers(String aswersFile){
         String aswer = "";
 
         try {
@@ -58,7 +59,7 @@ public class FirstExam implements Exam {
     }
 
 
-    public int startExam(Bot bot, Message message, Update update) {
+   /* public int startExam(Bot bot, Message message, Update update) {
         int rightAnswersCounter = 0;
         for (int i = 0; i < taskList.size() && i< answerList.size(); i++) {
             bot.sendTask(bot, message, taskList,i);
@@ -73,8 +74,20 @@ public class FirstExam implements Exam {
             }
         }
         return rightAnswersCounter;
-    }
+    }*/
+   public int checkTest(List<String> answers){
+       int counter = 0;
+       for(int i = 0;i<answerList.size();i++){
+           try {
+               if ((answers.get(i)).equals(answerList.get(i))) {
+                   counter++;
+               }
+           }catch(NullPointerException e){
 
+           }
+       }
+       return counter;
+   }
 
 
     private boolean checkAnswer(String answer, int numOfTask) {
@@ -83,6 +96,13 @@ public class FirstExam implements Exam {
             return true;
         } else return false;
     }
-
-
+    public String getTask(int i) {
+        return taskList.get(i);
+    }
+    public String getAnswer(int i) {
+        return answerList.get(i);
+    }
+    public int size(){
+        return taskList.size();
+    }
 }

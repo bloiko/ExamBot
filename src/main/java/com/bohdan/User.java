@@ -7,6 +7,16 @@ public class User {
     private String chatId;
     private boolean examStart;
     private List<String> answers;
+    private int task;
+
+    public int getTaskNum() {
+        return task;
+    }
+
+    public void appendTaskByOne() {
+        this.task ++;
+    }
+
     public User(){
         answers = new LinkedList<String>();
     }
@@ -21,6 +31,11 @@ public class User {
     public void addAnswer(String a){
         answers.add(a);
     }
+
+    public List<String> getAnswers() {
+        return answers;
+    }
+
     public boolean isExamStart() {
         return examStart;
     }
