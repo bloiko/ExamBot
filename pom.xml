@@ -33,7 +33,7 @@
                 <programs>
                     <program>
                         <mainClass>com.bohdan.Bot</mainClass>
-                        <name>workerBot42324242</name>//////////////////////////////////////////////////////
+                        <name>workerBot</name>
                     </program>
                 </programs>
             </configuration>
