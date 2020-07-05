@@ -1,5 +1,6 @@
 package com.bohdan;
 
+import Services.RedisService;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -21,12 +22,15 @@ import java.util.Scanner;
 public class Bot extends TelegramLongPollingBot {
     FileWriter usersNameFile;
     LinkedList<User> users;
-    Exam exam ;
+    Exam exam;
+    RedisService<Integer> redis;
 
-    public Bot(){
+    public Bot() {
         users = new LinkedList<User>();
-        exam =  new FirstExam("src/main/resources/data/Tasks", "src/main/resources/data/Answers");
+        exam = new FirstExam("src/main/resources/data/Tasks", "src/main/resources/data/Answers");
+        redis = new RedisService<Integer>();
     }
+
     public static void main(String[] args) {
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
@@ -38,7 +42,7 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void onUpdateReceived(Update update) {
-         Message message = update.getMessage();
+        Message message = update.getMessage();
         if (message != null && message.hasText()) {
             if (message.getText().equals("/info")) {
                 sendMsg(message, "Ви знаходитесь в боті,\n" +
@@ -51,76 +55,87 @@ public class Bot extends TelegramLongPollingBot {
                 boolean examExist = true;
                 if (examExist == false) {
                     sendMsg(message, "Екзамен розпочнеться 1 липня");
-                } else if(!User.getUserFromList(users, message.getChatId().toString()).isExamStart()) {
+                } //else if (!User.getUserFromList(users, message.getChatId().toString()).isExamStart()) {
                     sendMsg(message, "Екзамен розпочався");
                     sendMsg(message, "Правила");//To do
                     User user = User.getUserFromList(users, message.getChatId().toString());
                     user.setExamStart(true);
+                    user.setTask(0);
                     sendMsg(message, exam.getTask(user.getTaskNum()));
-                   // user.appendTaskByOne();
-                   // sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
+                    // user.appendTaskByOne();
+                    // sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
 
-                }else{sendMsg(message, "Ви проходили тест");}
+               // } else {
+               //     sendMsg(message, "Ви проходили тест");
+               // }
 
             } else if (message.getText().equals("/start")) {
                 sendMsg(message, "Привіт, я ExamBot\n" +
-                        "Пропоную тобі заробляти на своїх знаннях");
+                        "Пропоную тобі заробляти на своїх знаннях /info");
             } else if (message.getText().equals("/help")) {
                 sendMsg(message, getCommands("src/main/resources/data/commands"));
             } else if (message.getText().equals("/next")) {
                 User user = User.getUserFromList(users, message.getChatId().toString());
                 user.appendTaskByOne();
-                if(user.getTaskNum()<exam.size()) {
-                    sendMsg(message, exam.getTask(user.getTaskNum()));
-                }else sendMsg(message, "Правильних відповідей - " + exam.checkTest(user.getAnswers())+"/"+exam.size());
-            }else if (message.getText().equals("/register")) {
+                if (user.getTaskNum() < exam.size()) {
+                    sendMsg(message, exam.getTask(user.getTaskNum())+user.getTaskNum());
+                } else {
+                    sendMsg(message, "Правильних відповідей - " + exam.checkTest(user.getAnswers()) + "/" + exam.size());
+                    String userName = message.getFrom().getUserName();
+                    redis.put(userName, Integer.valueOf(exam.checkTest(user.getAnswers())));
+                }
+            } else if (message.getText().equals("/register")) {
                 String userName = message.getFrom().getUserName();
                 sendMsg(message, userName);
+                if (redis.getString(userName) != null) {
+                    redis.put(userName, 0);
+                }
                 User user = new User();
                 user.setChatId(message.getChatId().toString());
                 users.add(user);
-                try {
-                    FileOutputStream fos = new FileOutputStream("dataUsers/Users");
-                    byte[] buffer = userName.getBytes();
-                    fos.write(buffer);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
                 System.out.println(userName);
-                sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam" );
+                sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam");
 
-            }else if(message.getText().length()==1){
-                User user =  User.getUserFromList(users, message.getChatId().toString());
-                if (message.getText().equals("А")){
+            } else if (message.getText().length() == 1) {
+                User user = User.getUserFromList(users, message.getChatId().toString());
+                if (message.getText().equals("А")) {
                     user.addAnswer("А");
                     System.out.println("А");
 
-                }else if (message.getText().equals("Б")) {
+                } else if (message.getText().equals("Б")) {
                     user.addAnswer("Б");
                     System.out.println("Б");
 
-                }else if (message.getText().equals("В")) {
+                } else if (message.getText().equals("В")) {
                     user.addAnswer("В");
                     System.out.println("В");
 
                 } else if (message.getText().equals("Г")) {
                     user.addAnswer("Г");
                     System.out.println("Г");
-                }else if (message.getText().equals("Д")) {
+                } else if (message.getText().equals("Д")) {
                     user.addAnswer("Д");
                     System.out.println("Д");
-                }else {
+                } else {
                     user.addAnswer(message.getText());
                 }
 
                 sendMsg(message, "Натисніть /next, щоб перейти до наступного завдання");
+            } else if (message.getText().equals("/statistic")) {
+                String myMessage = "Статистика\n";
+                List<String> list = redis.getFirstThree(exam.size());
+                for(int i = 0;i<list.size();i++)
+                    myMessage+=list.get(i)+"\n";
+                sendMsg(message, myMessage);
+
             } else {
 
-                }
+            }
 
         }
 
     }
+
     public String getBotUsername() {
         return "ExamBot";
     }
@@ -128,19 +143,21 @@ public class Bot extends TelegramLongPollingBot {
     public String getBotToken() {
         return "1392710998:AAGZJY87XbV8Sl5D7e8AkyTQrvBMfaL11_8";
     }
-    public String getCommands(String file){
+
+    public String getCommands(String file) {
         String commands = "";
         try {
             FileReader fileReader = new FileReader(file);
             Scanner scan = new Scanner(fileReader);
             while (scan.hasNextLine()) {
                 String line = scan.nextLine();
-                commands+=line+"\n";
+                commands += line + "\n";
             }
         } catch (FileNotFoundException e) {
         }
         return commands;
     }
+
     public void sendTask(SendMessage message) {
         try {
             //sendMessage(sendMessage);
@@ -149,6 +166,7 @@ public class Bot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
     public void sendMsg(Message message, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
@@ -162,6 +180,7 @@ public class Bot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
     public void sendTask(Bot bot, Message message, List<String> taskList, int numOfTask) {
         String text = taskList.get(numOfTask);
         SendMessage sendMessage = new SendMessage();
@@ -171,14 +190,15 @@ public class Bot extends TelegramLongPollingBot {
         sendMessage.setText(text);
         long chatId = message.getChatId();
         //sendMessage.setReplyMarkup(createInlineButtons());
-       // bot.sendTask(sendMessage);
+        // bot.sendTask(sendMessage);
         try {
             //final Serializable execute = execute(sendMessage);
-            final Serializable execute = execute(sendInlineKeyBoardMessage(chatId,text));
+            final Serializable execute = execute(sendInlineKeyBoardMessage(chatId, text));
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }
+
     private InlineKeyboardMarkup createInlineButtons() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         InlineKeyboardButton inlineKeyboardButtonA = new InlineKeyboardButton();
@@ -205,7 +225,8 @@ public class Bot extends TelegramLongPollingBot {
         inlineKeyboardMarkup.setKeyboard(rowList);
         return inlineKeyboardMarkup;
     }
-    public static SendMessage sendInlineKeyBoardMessage(long chatId,String text) {
+
+    public static SendMessage sendInlineKeyBoardMessage(long chatId, String text) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         InlineKeyboardButton inlineKeyboardButton1 = new InlineKeyboardButton();
         InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();

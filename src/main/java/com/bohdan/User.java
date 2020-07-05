@@ -32,6 +32,10 @@ public class User {
         answers.add(a);
     }
 
+    public void setTask(int task) {
+        this.task = task;
+    }
+
     public List<String> getAnswers() {
         return answers;
     }
