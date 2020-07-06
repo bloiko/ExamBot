@@ -102,8 +102,14 @@ public class RedisService<T> {
         List<String> list = new LinkedList<>();
         int i = 1;
         for (String key : keys()) {
-            if (this.get(key).equals(maxNum)) {
-                list.add(i + " " + key + " " + this.get(key));
+            if ((this.get(key).get()).equals(maxNum)) {
+                list.add(i + ". " + key + " - " + this.get(key).get());
+                i++;
+            }
+        }
+        for (String key : keys()) {
+            if ((this.get(key).get()).equals(maxNum-1)) {
+                list.add(i + ". " + key + " - " + this.get(key).get());
                 i++;
             }
         }

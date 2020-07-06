@@ -5,9 +5,18 @@ import java.util.List;
 
 public class User {
     private String chatId;
+    private String login;
     private boolean examStart;
     private List<String> answers;
     private int task;
+
+    public String getLogin() {
+        return login;
+    }
+
+    public void setLogin(String login) {
+        this.login = login;
+    }
 
     public int getTaskNum() {
         return task;
@@ -16,12 +25,15 @@ public class User {
     public void appendTaskByOne() {
         this.task ++;
     }
-
+    public void restart(){
+        answers = new LinkedList<>();
+    }
     public User(){
         answers = new LinkedList<String>();
     }
-    public void setChatId(String chatId) {
+    public User setChatId(String chatId) {
         this.chatId = chatId;
+        return this;
     }
 
     public String getChatId() {

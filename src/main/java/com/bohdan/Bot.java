@@ -5,6 +5,7 @@ import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -14,10 +15,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.LongPollingBot;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Bot extends TelegramLongPollingBot {
     FileWriter usersNameFile;
@@ -56,18 +54,20 @@ public class Bot extends TelegramLongPollingBot {
                 if (examExist == false) {
                     sendMsg(message, "Екзамен розпочнеться 1 липня");
                 } //else if (!User.getUserFromList(users, message.getChatId().toString()).isExamStart()) {
-                    sendMsg(message, "Екзамен розпочався");
-                    sendMsg(message, "Правила");//To do
-                    User user = User.getUserFromList(users, message.getChatId().toString());
-                    user.setExamStart(true);
-                    user.setTask(0);
-                    sendMsg(message, exam.getTask(user.getTaskNum()));
-                    // user.appendTaskByOne();
-                    // sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
+               // sendMsg(message, "Екзамен розпочався");
+                //sendMsg(message, "Правила");//To do
+                User user = User.getUserFromList(users, message.getChatId().toString());
+                user.setExamStart(true);
+                user.setTask(0);
+                user.restart();
+                //sendTask(message, exam.getTask(user.getTaskNum()));
+                sendTask(message, user.getTaskNum());
+                // user.appendTaskByOne();
+                // sendMsg(message, "Правильних відповідей - " + rightAnswers);//To do
 
-               // } else {
-               //     sendMsg(message, "Ви проходили тест");
-               // }
+                // } else {
+                //     sendMsg(message, "Ви проходили тест");
+                // }
 
             } else if (message.getText().equals("/start")) {
                 sendMsg(message, "Привіт, я ExamBot\n" +
@@ -78,7 +78,7 @@ public class Bot extends TelegramLongPollingBot {
                 User user = User.getUserFromList(users, message.getChatId().toString());
                 user.appendTaskByOne();
                 if (user.getTaskNum() < exam.size()) {
-                    sendMsg(message, exam.getTask(user.getTaskNum())+user.getTaskNum());
+                    sendMsg(message, exam.getTask(user.getTaskNum()) + user.getTaskNum());
                 } else {
                     sendMsg(message, "Правильних відповідей - " + exam.checkTest(user.getAnswers()) + "/" + exam.size());
                     String userName = message.getFrom().getUserName();
@@ -86,17 +86,16 @@ public class Bot extends TelegramLongPollingBot {
                 }
             } else if (message.getText().equals("/register")) {
                 String userName = message.getFrom().getUserName();
-                sendMsg(message, userName);
                 if (redis.getString(userName) != null) {
                     redis.put(userName, 0);
                 }
                 User user = new User();
-                user.setChatId(message.getChatId().toString());
+                user.setChatId(message.getChatId().toString()).setLogin(userName);
                 users.add(user);
                 System.out.println(userName);
                 sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam");
 
-            } else if (message.getText().length() == 1) {
+            } /*else if (message.getText().length() == 1) {
                 User user = User.getUserFromList(users, message.getChatId().toString());
                 if (message.getText().equals("А")) {
                     user.addAnswer("А");
@@ -121,15 +120,58 @@ public class Bot extends TelegramLongPollingBot {
                 }
 
                 sendMsg(message, "Натисніть /next, щоб перейти до наступного завдання");
-            } else if (message.getText().equals("/statistic")) {
-                String myMessage = "Статистика\n";
+            }*/ else if (message.getText().equals("/stat")) {
+                String myMessage = "Статистика:\n";
                 List<String> list = redis.getFirstThree(exam.size());
-                for(int i = 0;i<list.size();i++)
-                    myMessage+=list.get(i)+"\n";
+                for (int i = 0; i < list.size(); i++)
+                    myMessage += list.get(i) + "\n";
+                sendMsg(message, myMessage);
+
+            } else if (message.getText().equals("/mystat")) {
+                String myMessage = "Твоя статистика:\n";
+                Optional<Integer> num = redis.get(message.getFrom().getUserName());
+                myMessage += message.getFrom().getUserName() + " - " + Integer.valueOf(num.get()) + "\n";
                 sendMsg(message, myMessage);
 
             } else {
 
+            }
+        }
+        if (update.hasCallbackQuery()) {
+            // Set variables
+            String call_data = update.getCallbackQuery().getData();
+            long message_id = update.getCallbackQuery().getMessage().getMessageId();
+            long chat_id = update.getCallbackQuery().getMessage().getChatId();
+            User user = User.getUserFromList(users, update.getCallbackQuery().getMessage().getChatId().toString());
+            if (call_data.length() == 1) {
+                if (call_data.equals("A")||call_data.charAt(0)==65) {
+                    user.addAnswer("А");
+                    System.out.println("А");
+
+                } else if (call_data.equals("Б")) {
+                    user.addAnswer("Б");
+                    System.out.println("Б");
+
+                } else if (call_data.equals("В")) {
+                    user.addAnswer("В");
+                    System.out.println("В");
+
+                } else if (call_data.equals("Г")) {
+                    user.addAnswer("Г");
+                    System.out.println("Г");
+                } else if (call_data.equals("Д")) {
+                    user.addAnswer("Д");
+                    System.out.println("Д");
+                }
+                user.appendTaskByOne();
+                if (user.getTaskNum() < exam.size()) {
+                    //sendMsg(update.getCallbackQuery().getMessage(), exam.getTask(user.getTaskNum()) + user.getTaskNum());
+                    sendTask(update.getCallbackQuery().getMessage(), user.getTaskNum());
+                } else {
+                    sendMsg(update.getCallbackQuery().getMessage(), "Правильних відповідей - " + exam.checkTest(user.getAnswers()) + "/" + exam.size());
+                    String userName = update.getCallbackQuery().getFrom().getUserName();
+                    redis.put(userName, Integer.valueOf(exam.checkTest(user.getAnswers())));
+                }
             }
 
         }
@@ -158,14 +200,7 @@ public class Bot extends TelegramLongPollingBot {
         return commands;
     }
 
-    public void sendTask(SendMessage message) {
-        try {
-            //sendMessage(sendMessage);
-            execute(message);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
+
 
     public void sendMsg(Message message, String text) {
         SendMessage sendMessage = new SendMessage();
@@ -180,35 +215,46 @@ public class Bot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
-
-    public void sendTask(Bot bot, Message message, List<String> taskList, int numOfTask) {
-        String text = taskList.get(numOfTask);
+    public void sendCallBack(Update update,String answer){
+        String call_data = update.getCallbackQuery().getData();
+        long message_id = update.getCallbackQuery().getMessage().getMessageId();
+        long chat_id = update.getCallbackQuery().getMessage().getChatId();
+            EditMessageText new_message = new EditMessageText()
+                    .setChatId(chat_id)
+                    .setMessageId(Integer.parseInt(String.valueOf(message_id)))
+                    .setText(answer);
+            try {
+                execute(new_message);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+    }
+    public void sendTask(Message message, int numOfTask) {
+        String text = exam.getTask(numOfTask);
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(message.getChatId().toString());
         sendMessage.setReplyToMessageId(message.getMessageId());
-        sendMessage.setText(text);
+        sendMessage.setText(text).setReplyMarkup(createInlineButtons());
         long chatId = message.getChatId();
-        //sendMessage.setReplyMarkup(createInlineButtons());
-        // bot.sendTask(sendMessage);
         try {
-            //final Serializable execute = execute(sendMessage);
             final Serializable execute = execute(sendInlineKeyBoardMessage(chatId, text));
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+
     }
 
     private InlineKeyboardMarkup createInlineButtons() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         InlineKeyboardButton inlineKeyboardButtonA = new InlineKeyboardButton();
-        inlineKeyboardButtonA.setText("A");
+        inlineKeyboardButtonA.setText("А").setCallbackData("А");
         InlineKeyboardButton inlineKeyboardButtonB = new InlineKeyboardButton();
-        inlineKeyboardButtonB.setText("Б");
+        inlineKeyboardButtonB.setText("Б").setCallbackData("Б");
         InlineKeyboardButton inlineKeyboardButtonC = new InlineKeyboardButton();
-        inlineKeyboardButtonC.setText("В");
+        inlineKeyboardButtonC.setText("В").setCallbackData("В");
         InlineKeyboardButton inlineKeyboardButtonD = new InlineKeyboardButton();
-        inlineKeyboardButtonD.setText("Г");
+        inlineKeyboardButtonD.setText("Г").setCallbackData("Г");
 
         List<InlineKeyboardButton> keyboardButtonsRow1 = new ArrayList<InlineKeyboardButton>();
         keyboardButtonsRow1.add(inlineKeyboardButtonA);
@@ -232,14 +278,14 @@ public class Bot extends TelegramLongPollingBot {
         InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
         inlineKeyboardButton1.setText("A");
         inlineKeyboardButton1.setCallbackData("A");
-        inlineKeyboardButton2.setText("Г");
-        inlineKeyboardButton2.setCallbackData("Г");
+        inlineKeyboardButton2.setText("В");
+        inlineKeyboardButton2.setCallbackData("В");
         List<InlineKeyboardButton> keyboardButtonsRow1 = new ArrayList<InlineKeyboardButton>();
         List<InlineKeyboardButton> keyboardButtonsRow2 = new ArrayList<InlineKeyboardButton>();
         keyboardButtonsRow1.add(inlineKeyboardButton1);
-        keyboardButtonsRow1.add(new InlineKeyboardButton().setText("Б").setCallbackData("CallFi4a"));
+        keyboardButtonsRow1.add(new InlineKeyboardButton().setText("Б").setCallbackData("Б"));
         keyboardButtonsRow2.add(inlineKeyboardButton2);
-        keyboardButtonsRow2.add(new InlineKeyboardButton().setText("Д").setCallbackData("CallFi4a"));
+        keyboardButtonsRow2.add(new InlineKeyboardButton().setText("Г").setCallbackData("Г"));
         List<List<InlineKeyboardButton>> rowList = new ArrayList<List<InlineKeyboardButton>>();
         rowList.add(keyboardButtonsRow1);
         rowList.add(keyboardButtonsRow2);
