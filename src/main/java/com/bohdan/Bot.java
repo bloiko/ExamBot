@@ -82,10 +82,6 @@ public class Bot extends TelegramLongPollingBot {
                          "1. Зареєструватись за допомогою команди /register;\n" +
                         "2. Надіслати посилання @TryToEarn_bot п'ятьом друзям.\n" +
                         "Успіхів!" );
-        sendMsg(message, "Спочатку зареєструйтесь за допомогою /register\n" +
-                "І надішліть посилання @TryToEarn_bot п'ятьом друзям\n");
-
-
     }
 
     private void showExam(Message message,String chat_id) {
