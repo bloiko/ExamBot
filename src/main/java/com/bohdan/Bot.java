@@ -48,7 +48,9 @@ public class Bot extends TelegramLongPollingBot {
             } else if (message.getText().equals("/exam")) {
                 showExam(message, chatId);
             } else if (message.getText().equals("/start")) {
-                sendMsg(message, "Привіт, я ExamBot\n" + "Пропоную тобі заробляти на своїх знаннях /info");
+                sendMsg(message,  "Привіт, я - ExamBot ✌\uD83C\uDFFB\n" +
+                        "Пропоную тобі заробляти на своїх знаннях \uD83D\uDCB0\n" +
+                        "Список команд та вся необхідна інформація - /info");
             } else if (message.getText().equals("/help")) {
                 sendMsg(message, getCommands("src/main/resources/data/commands"));
             } else if (message.getText().equals("/register")) {
