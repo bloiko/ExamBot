@@ -75,9 +75,13 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private void showInfo(Message message) {
-        sendMsg(message, "Проходьте екзамен.\n" +
-                "Займайте призові місця.\n" +
-                "Заробляйте 100грн, 50грн, 30грн\n" );
+        sendMsg(message, "ExamBot - бот, який дозволяє не лише перевірити свої знання,\n" +
+                              "а й отримати за це виграш!\n" +
+                        "Виконуй завдання, займай призові місця та отримуй 100, 50 та 30 грн відповідно.\n " +
+                        "Для того, щоб взяти участь необхідно :\n" +
+                         "1. Зареєструватись за допомогою команди /register;\n" +
+                        "2. Надіслати посилання @TryToEarn_bot п'ятьом друзям.\n" +
+                        "Успіхів!" );
         sendMsg(message, "Спочатку зареєструйтесь за допомогою /register\n" +
                 "І надішліть посилання @TryToEarn_bot п'ятьом друзям\n");
 
@@ -188,7 +192,7 @@ public class Bot extends TelegramLongPollingBot {
     public List<String> getFirstThree(int maxNum) {
         List<String> list = new LinkedList<>();
         int i = 1;
-        for(int counter =0;counter<exam.size() && i<10;counter++) {
+        for(int counter =0;counter<=exam.size() && i<10;counter++) {
             for (String key : redis.keys()) {
                 Optional<Integer> user = redis.get(key);
                 if (user != null && !user.equals(Optional.of(0)) && !key.equals("fromzerotoheroo")) {
