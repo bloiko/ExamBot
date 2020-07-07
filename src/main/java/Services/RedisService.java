@@ -98,23 +98,7 @@ public class RedisService<T> {
         }
     }
 
-    public List<String> getFirstThree(int maxNum) {
-        List<String> list = new LinkedList<>();
-        int i = 1;
-        for (String key : keys()) {
-            if ((this.get(key).get()).equals(maxNum)) {
-                list.add(i + ". " + key + " - " + this.get(key).get());
-                i++;
-            }
-        }
-        for (String key : keys()) {
-            if ((this.get(key).get()).equals(maxNum-1)) {
-                list.add(i + ". " + key + " - " + this.get(key).get());
-                i++;
-            }
-        }
-        return list;
-    }
+
    /* public List<String> sortList(List<String> list) {
         for(String el : list){
             String[] arr = el.split(" ");

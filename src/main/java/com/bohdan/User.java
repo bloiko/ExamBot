@@ -7,15 +7,26 @@ public class User {
     private String chatId;
     private String login;
     private boolean examStart;
+    private int stat;
     private List<String> answers;
     private int task;
+
+    public User setStat(int stat) {
+        this.stat = stat;
+        return this;
+    }
+
+    public int getStat() {
+        return stat;
+    }
 
     public String getLogin() {
         return login;
     }
 
-    public void setLogin(String login) {
+    public User setLogin(String login) {
         this.login = login;
+        return this;
     }
 
     public int getTaskNum() {
