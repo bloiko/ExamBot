@@ -5,6 +5,7 @@ import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -48,13 +49,13 @@ public class Bot extends TelegramLongPollingBot {
             } else if (message.getText().equals("/exam")) {
                 showExam(message, chatId);
             } else if (message.getText().equals("/start")) {
-                sendMsg(message,  "Привіт, я - ExamBot ✌\uD83C\uDFFB\n" +
+                sendMsg(message, "Привіт, я - ExamBot ✌\uD83C\uDFFB\n" +
                         "Пропоную тобі заробляти на своїх знаннях \uD83D\uDCB0\n" +
                         "Список команд та вся необхідна інформація - /info");
             } else if (message.getText().equals("/help")) {
                 sendMsg(message, getCommands("src/main/resources/data/commands"));
             } else if (message.getText().equals("/register")) {
-                registerUser(message,chatId);
+                registerUser(message, chatId);
             } else if (message.getText().equals("/stat")) {
                 showStat(message);
             } else if (message.getText().equals("/mystat")) {
@@ -63,7 +64,7 @@ public class Bot extends TelegramLongPollingBot {
                 sendMsg(message, "???");
             }
         }
-        if (update.hasCallbackQuery()) {
+        else if (update.hasCallbackQuery()) {
             String call_data = update.getCallbackQuery().getData();
             long message_id = update.getCallbackQuery().getMessage().getMessageId();
             long chat_id = update.getCallbackQuery().getMessage().getChatId();
@@ -74,19 +75,20 @@ public class Bot extends TelegramLongPollingBot {
 
         }
 
+
     }
 
     private void showInfo(Message message) {
         sendMsg(message, "ExamBot - бот, який дозволяє не лише перевірити свої знання,\n" +
-                              "а й отримати за це виграш!\n" +
-                        "Виконуй завдання, займай призові місця та отримуй 100, 50 та 30 грн відповідно.\n " +
-                        "Для того, щоб взяти участь необхідно :\n" +
-                         "1. Зареєструватись за допомогою команди /register;\n" +
-                        "2. Надіслати посилання @TryToEarn_bot п'ятьом друзям.\n" +
-                        "Успіхів!" );
+                "а й отримати за це виграш!\n" +
+                "Виконуй завдання, займай призові місця та отримуй 100, 50 та 30 грн відповідно.\n " +
+                "Для того, щоб взяти участь необхідно :\n" +
+                "1. Зареєструватись за допомогою команди /register;\n" +
+                "2. Надіслати посилання @TryToEarn_bot п'ятьом друзям.\n" +
+                "Успіхів!");
     }
 
-    private void showExam(Message message,String chat_id) {
+    private void showExam(Message message, String chat_id) {
         boolean examExist = true;
         if (examExist == false) {
             sendMsg(message, "Екзамен розпочнеться 1 липня");
@@ -104,7 +106,7 @@ public class Bot extends TelegramLongPollingBot {
 
     }
 
-    private void registerUser(Message message,String chat_id) {
+    private void registerUser(Message message, String chat_id) {
         String userName = message.getFrom().getLastName() + " " + message.getFrom().getFirstName();
         if (redis.getString(userName) != null) {
             redis.put(userName, 0);
@@ -119,7 +121,7 @@ public class Bot extends TelegramLongPollingBot {
     private void showStat(Message message) {
         String myMessage = "Статистика:\n";
         List<String> list = getFirstThree(exam.size());
-        for (int i = 0; i < list.size() && i<10; i++)
+        for (int i = 0; i < list.size() && i < 10; i++)
             myMessage += (i + 1) + ". " + list.get(i) + " - " + redis.get(list.get(i)).get() + "\n";
         sendMsg(message, myMessage);
 
@@ -155,12 +157,13 @@ public class Bot extends TelegramLongPollingBot {
         }
         user.appendTaskByOne();
         if (user.getTaskNum() < exam.size()) {
-            //sendMsg(update.getCallbackQuery().getMessage(), exam.getTask(user.getTaskNum()) + user.getTaskNum());
             sendTask(update.getCallbackQuery().getMessage(), user.getTaskNum());
         } else {
             sendMsg(update.getCallbackQuery().getMessage(), "Правильних відповідей - " + exam.checkTest(user.getAnswers()) + "/" + exam.size());
             String userName = update.getCallbackQuery().getFrom().getLastName() + " " + update.getCallbackQuery().getFrom().getFirstName();
             redis.put(userName, exam.checkTest(user.getAnswers()));
+            sendPhoto(update.getCallbackQuery().getMessage().getChatId().toString(),"Advertising","src/main/resources/photos/dima.jpg");
+            sendMsg(update.getCallbackQuery().getMessage(), "https://www.instagram.com/_booksummary_/");
         }
 
     }
@@ -190,11 +193,11 @@ public class Bot extends TelegramLongPollingBot {
     public List<String> getFirstThree(int maxNum) {
         List<String> list = new LinkedList<>();
         int i = 1;
-        for(int counter =0;counter<=exam.size() && i<10;counter++) {
+        for (int counter = 0; counter <= exam.size() && i < 10; counter++) {
             for (String key : redis.keys()) {
                 Optional<Integer> user = redis.get(key);
                 if (user != null && !user.equals(Optional.of(0)) && !key.equals("fromzerotoheroo")) {
-                    if (user.get() == maxNum-counter) {
+                    if (user.get() == maxNum - counter) {
                         list.add(key);
                         i++;
                     }
@@ -202,6 +205,20 @@ public class Bot extends TelegramLongPollingBot {
             }
         }
         return list;
+    }
+
+    public void sendPhoto(String chatId, String photoName, String photoFile) {
+        SendPhoto photo = null;
+        try {
+            photo = new SendPhoto().setPhoto(photoName, new FileInputStream(new File(photoFile))).setChatId(chatId);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            this.execute(photo);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     public void sendMsg(Message message, String text) {
@@ -238,7 +255,7 @@ public class Bot extends TelegramLongPollingBot {
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(message.getChatId().toString());
         sendMessage.setReplyToMessageId(message.getMessageId());
-       // sendMessage.setText(text).setReplyMarkup(createInlineButtons());
+        // sendMessage.setText(text).setReplyMarkup(createInlineButtons());
         long chatId = message.getChatId();
         try {
             final Serializable execute = execute(sendInlineKeyBoardMessage(chatId, text));
@@ -247,7 +264,6 @@ public class Bot extends TelegramLongPollingBot {
         }
 
     }
-
 
 
     public static SendMessage sendInlineKeyBoardMessage(long chatId, String text) {
