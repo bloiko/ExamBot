@@ -163,7 +163,7 @@ public class Bot extends TelegramLongPollingBot {
             String userName = update.getCallbackQuery().getFrom().getLastName() + " " + update.getCallbackQuery().getFrom().getFirstName();
             redis.put(userName, exam.checkTest(user.getAnswers()));
             sendPhoto(update.getCallbackQuery().getMessage().getChatId().toString(),"Advertising","src/main/resources/photos/dima.jpg");
-            sendMsg(update.getCallbackQuery().getMessage(), "https://www.instagram.com/_booksummary_/");
+            sendMsg(update.getCallbackQuery().getMessage(), "Підпишись https://www.instagram.com/_booksummary_/");
         }
 
     }
