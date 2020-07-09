@@ -20,12 +20,12 @@ import java.util.*;
 
 public class Bot extends TelegramLongPollingBot {
     FileWriter usersNameFile;
-    LinkedList<User> users;
     Exam exam;
+    List<User> users;
     RedisService<Integer> redis;
 
     public Bot() {
-        users = new LinkedList<User>();
+        users = new LinkedList<>();
         exam = new FirstExam("src/main/resources/data/Tasks", "src/main/resources/data/Answers");
         redis = new RedisService<Integer>();
     }
@@ -60,28 +60,48 @@ public class Bot extends TelegramLongPollingBot {
                 showStat(message);
             } else if (message.getText().equals("/mystat")) {
                 showMyStat(message);
+            } else if (message.getText().equals("/size")) {
+                showSize(message);
+            } else if (message.getText().equals("/users")) {
+                showUsers(message);
+            } else if (message.getText().equals("/removeAll")) {
+                redis.removeAll();
             } else {
                 sendMsg(message, "???");
             }
-        }
-        else if (update.hasCallbackQuery()) {
+        } else if (update.hasCallbackQuery()) {
             String call_data = update.getCallbackQuery().getData();
             long message_id = update.getCallbackQuery().getMessage().getMessageId();
             long chat_id = update.getCallbackQuery().getMessage().getChatId();
-            User user = User.getUserFromList(users, update.getCallbackQuery().getMessage().getChatId().toString());
+            User user = User.getUserFromList((LinkedList<User>) users, update.getCallbackQuery().getMessage().getChatId().toString());
             if (call_data.length() == 1) {
                 outputCallBack(update, user, call_data);
             }
-
         }
 
 
     }
 
+    private void showSize(Message message) {
+        sendMsg(message, String.valueOf(users.size()));
+    }
+
+    private void showUsers(Message message) {
+        String result = "------\n";
+        for (String key : redis.keys()) {
+            try {
+                result += key + " " + redis.get(key).get() + "\n";
+            } catch (Exception e) {
+
+            }
+        }
+        sendMsg(message, result);
+    }
+
     private void showInfo(Message message) {
         sendMsg(message, "ExamBot - бот, який дозволяє не лише перевірити свої знання,\n" +
-                "а й отримати за це виграш!\n" +
-                "Виконуй завдання, займай призові місця та отримуй 100, 50 та 30 грн відповідно.\n " +
+                "а й отримати за це виграш 15 грн!\n" +
+                // "Виконуй завдання, займай призові місця та отримуй 100, 50 та 30 грн відповідно.\n " +
                 "Для того, щоб взяти участь необхідно :\n" +
                 "1. Зареєструватись за допомогою команди /register;\n" +
                 "2. Надіслати посилання @TryToEarn_bot п'ятьом друзям.\n" +
@@ -90,48 +110,66 @@ public class Bot extends TelegramLongPollingBot {
 
     private void showExam(Message message, String chat_id) {
         boolean examExist = true;
-        if (examExist == false) {
-            sendMsg(message, "Екзамен розпочнеться 1 липня");
-        } //else if (!User.getUserFromList(users, message.getChatId().toString()).isExamStart()) {
-        // sendMsg(message, "Екзамен розпочався");
-        //sendMsg(message, "Правила");//To do
-        User user = User.getUserFromList(users, chat_id);
-        user.setExamStart(true);
-        user.setTask(0);
-        user.restart();
-        sendTask(message, user.getTaskNum());
-        // } else {
-        //     sendMsg(message, "Ви проходили тест");
-        // }
+
+        String userName = message.getFrom().getLastName() + " " + message.getFrom().getFirstName();
+        try {
+            if (examExist == false) {
+                sendMsg(message, "Екзамен розпочнеться 1 липня");
+            } else if (redis.get(userName).get().equals(0)) {
+                // sendMsg(message, "Екзамен розпочався");
+                sendMsg(message, "Пройти екзамен можна тільки раз!");
+                User user = User.getUserFromList((LinkedList<User>) users, chat_id);
+                user.setExamStart(true);
+                user.setTask(0);
+                user.restart();
+                sendTask(message, user.getTaskNum());
+
+            } else {
+                sendMsg(message, "Ви проходили тест");
+                sendMsg(message, "Запросіть друзів");
+                sendMsg(message, "Коли набереться 100 учасників, починається екзамен на 30 грн");
+            }
+        } catch (Exception e) {
+            sendMsg(message, "Зареєструйтесь /register");
+        }
 
     }
 
     private void registerUser(Message message, String chat_id) {
         String userName = message.getFrom().getLastName() + " " + message.getFrom().getFirstName();
-        if (redis.getString(userName) != null) {
+        try {
+            int i = redis.get(userName).get();
+            sendMsg(message, "Ви вже були зареєстровані");
+        } catch (Exception e) {
             redis.put(userName, 0);
+
+            User user = new User();
+            user.setChatId(chat_id).setLogin(userName);
+            users.add(user);
+            System.out.println(userName);
+            sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam");
         }
-        User user = new User();
-        user.setChatId(chat_id).setLogin(userName);
-        users.add(user);
-        System.out.println(userName);
-        sendMsg(message, "Ви зареєстровані, можете розпочинати екзамен /exam");
     }
 
     private void showStat(Message message) {
+        sendMsg(message, "Підраховую👀");
         String myMessage = "Статистика:\n";
         List<String> list = getFirstThree(exam.size());
-        for (int i = 0; i < list.size() && i < 10; i++)
+        for (int i = 0; i < list.size() && i < 5; i++)
             myMessage += (i + 1) + ". " + list.get(i) + " - " + redis.get(list.get(i)).get() + "\n";
         sendMsg(message, myMessage);
 
     }
 
     private void showMyStat(Message message) {
-        String myMessage = "Твоя статистика:\n";
-        Optional<Integer> num = redis.get(message.getFrom().getLastName() + " " + message.getFrom().getFirstName());
-        myMessage += message.getFrom().getLastName() + " " + message.getFrom().getFirstName() + " - " + Integer.valueOf(num.get()) + "\n";
-        sendMsg(message, myMessage);
+        try {
+            String myMessage = "Твоя статистика:\n";
+            Optional<Integer> num = redis.get(message.getFrom().getLastName() + " " + message.getFrom().getFirstName());
+            myMessage += message.getFrom().getLastName() + " " + message.getFrom().getFirstName() + " - " + Integer.valueOf(num.get()) + "\n";
+            sendMsg(message, myMessage);
+        } catch (Exception e) {
+            sendMsg(message, "Можливо ви не зареєструвались!");
+        }
 
     }
 
@@ -162,8 +200,9 @@ public class Bot extends TelegramLongPollingBot {
             sendMsg(update.getCallbackQuery().getMessage(), "Правильних відповідей - " + exam.checkTest(user.getAnswers()) + "/" + exam.size());
             String userName = update.getCallbackQuery().getFrom().getLastName() + " " + update.getCallbackQuery().getFrom().getFirstName();
             redis.put(userName, exam.checkTest(user.getAnswers()));
-            sendPhoto(update.getCallbackQuery().getMessage().getChatId().toString(),"Advertising","src/main/resources/photos/dima.jpg");
+            sendPhoto(update.getCallbackQuery().getMessage().getChatId().toString(), "Advertising", "src/main/resources/photos/dima.jpg");
             sendMsg(update.getCallbackQuery().getMessage(), "Підпишись https://www.instagram.com/_booksummary_/");
+            sendMsg(update.getCallbackQuery().getMessage(), "/mystat | /stat | /help");
         }
 
     }
@@ -193,14 +232,18 @@ public class Bot extends TelegramLongPollingBot {
     public List<String> getFirstThree(int maxNum) {
         List<String> list = new LinkedList<>();
         int i = 1;
-        for (int counter = 0; counter <= exam.size() && i < 10; counter++) {
+        for (int counter = 0; counter <= exam.size()/2+5 && i < 5; counter++) {
             for (String key : redis.keys()) {
-                Optional<Integer> user = redis.get(key);
-                if (user != null && !user.equals(Optional.of(0)) && !key.equals("fromzerotoheroo")) {
-                    if (user.get() == maxNum - counter) {
-                        list.add(key);
-                        i++;
+                try {
+                    Optional<Integer> user = redis.get(key);
+                    if (!user.equals(Optional.of(0)) && !key.equals("fromzerotoheroo")) {
+                        if (user.get() == maxNum - counter) {
+                            list.add(key);
+                            i++;
+                        }
                     }
+                } catch (Exception e) {
+
                 }
             }
         }

@@ -6,7 +6,7 @@ import java.util.List;
 public class User {
     private String chatId;
     private String login;
-    private boolean examStart;
+    private boolean firstExamStart;
     private int stat;
     private List<String> answers;
     private int task;
@@ -64,11 +64,11 @@ public class User {
     }
 
     public boolean isExamStart() {
-        return examStart;
+        return firstExamStart;
     }
 
     public void setExamStart(boolean examStart) {
-        this.examStart = examStart;
+        this.firstExamStart = examStart;
     }
     public static User getUserFromList(LinkedList<User> users, String chatId){
         for(User u : users){

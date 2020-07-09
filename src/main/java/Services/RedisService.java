@@ -97,7 +97,11 @@ public class RedisService<T> {
             throw new IllegalStateException(e);
         }
     }
-
+    public void removeAll(){
+        for(String key: keys()){
+            remove(key);
+        }
+    }
 
    /* public List<String> sortList(List<String> list) {
         for(String el : list){
